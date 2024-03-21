@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 
 import librosa
 import librosa.display
+import librosa.feature
 
 from sklearn.model_selection import train_test_split
 from sklearn import preprocessing
@@ -25,11 +26,11 @@ def visualize_spectrogram(path, duration=None,
 
     # Make a mel-scaled power (energy-squared) spectrogram
     y, sr = librosa.load(path, sr=sr, duration=duration, offset=offset)
-    S = librosa.feature.melspectrogram(y, sr=sr, n_mels=n_mels, n_fft=n_fft,
+    S = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=n_mels, n_fft=n_fft,
                                        hop_length=hop_length)
 
     # Convert to log scale (dB)
-    log_S = librosa.logamplitude(S, ref_power=1.0)
+    log_S = librosa.power_to_db(S, ref=1.0)
 
     # Render output spectrogram in the console
     plt.figure(figsize=(12, 5))
@@ -49,7 +50,7 @@ def create_dataset(artist_folder='artists', save_folder='song_data',
     # get list of all artists
     os.makedirs(save_folder, exist_ok=True)
     artists = [path for path in os.listdir(artist_folder) if
-               os.path.isdir(path)]
+               os.path.isdir(artist_folder + os.sep + path)]
 
     # iterate through all artists, albums, songs and find mel spectrogram
     for artist in artists:
@@ -66,10 +67,10 @@ def create_dataset(artist_folder='artists', save_folder='song_data',
 
                 # Create mel spectrogram and convert it to the log scale
                 y, sr = librosa.load(song_path, sr=sr)
-                S = librosa.feature.melspectrogram(y, sr=sr, n_mels=n_mels,
+                S = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=n_mels,
                                                    n_fft=n_fft,
                                                    hop_length=hop_length)
-                log_S = librosa.logamplitude(S, ref_power=1.0)
+                log_S = librosa.power_to_db(S, ref=1.0)
                 data = (artist, log_S, song)
 
                 # Save each song
@@ -240,9 +241,9 @@ def create_spectrogram_plots(artist_folder='artists', sr=16000, n_mels=128,
 
         # Create mel spectrogram
         y, sr = librosa.load(song_path, sr=sr, offset=60, duration=3)
-        S = librosa.feature.melspectrogram(y, sr=sr, n_mels=n_mels,
+        S = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=n_mels,
                                            n_fft=n_fft, hop_length=hop_length)
-        log_S = librosa.logamplitude(S, ref_power=1.0)
+        log_S = librosa.power_to_db(S, ref=1.0)
 
         # Plot on grid
         plt.axes(ax[row, col])
@@ -259,7 +260,7 @@ def create_spectrogram_plots(artist_folder='artists', sr=16000, n_mels=128,
 def plot_confusion_matrix(cm, classes,
                           normalize=False,
                           title='Confusion matrix',
-                          cmap=plt.cm.get_cmap('Blues')):
+                          cmap=plt.colormaps['Blues']):
     """
     This function prints and plots the confusion matrix.
     Normalization can be applied by setting `normalize=True`.
