@@ -218,7 +218,8 @@ def create_spectrogram_plots(artist_folder='artists', sr=16000, n_mels=128,
      for each artist and plot"""
 
     # get list of all artists
-    artists = os.listdir(artist_folder)
+    artists = [path for path in os.listdir(artist_folder) if
+               os.path.isdir(artist_folder + os.sep + path)]
 
     fig, ax = plt.subplots(nrows=4, ncols=5, figsize=(14, 12), sharex=True,
                            sharey=True)
@@ -424,9 +425,9 @@ def simple_encoding(Y, le=None):
 if __name__ == '__main__':
 
     # configuration options
-    create_data = True
-    create_visuals = False
-    save_visuals = False
+    create_data = False
+    create_visuals = True
+    save_visuals = True
 
     if create_data:
         create_dataset(artist_folder='artists', save_folder='song_data',
