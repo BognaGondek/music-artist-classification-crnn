@@ -24,7 +24,7 @@ if __name__ == '__main__':
 
     slice_lengths = [911, 628, 313, 157, 94, 32]
     random_state_list = [0, 21, 42]
-    iterations = 3
+    iterations = 1
     summary_metrics_output_folder = 'trials_song_split'
     for slice_len in slice_lengths:
 

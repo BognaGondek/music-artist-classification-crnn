@@ -8,6 +8,7 @@ from os.path import isfile
 
 from keras.callbacks import ModelCheckpoint, EarlyStopping
 from keras.optimizers import Adam
+from keras import models as keras_models
 
 from sklearn.metrics import confusion_matrix, classification_report
 
@@ -22,8 +23,8 @@ def train_model(nb_classes=20,
                 save_metrics=True,
                 save_metrics_folder='metrics',
                 save_weights_folder='weights',
-                batch_size=16,
-                nb_epochs=200,
+                batch_size=4,
+                nb_epochs=1,
                 early_stop=10,
                 lr=0.0001,
                 album_split=True,
@@ -80,7 +81,7 @@ def train_model(nb_classes=20,
     # build the model
     model = models.CRNN2D(X_train.shape, nb_classes=Y_train.shape[1])
     model.compile(loss='categorical_crossentropy',
-                  optimizer=Adam(lr=lr),
+                  optimizer=Adam(learning_rate=lr),
                   metrics=['accuracy'])
     model.summary()
 
@@ -112,14 +113,14 @@ def train_model(nb_classes=20,
             utility.plot_history(history)
 
     # Load weights that gave best performance on validation set
-    model.load_weights(weights)
+    model = keras_models.load_model(weights)
     filename = os.path.join(save_metrics_folder, str(nb_classes) + '_'
                             + str(slice_length)
                             + '_' + str(random_states) + '.txt')
 
     # Score test model
-    score = model.evaluate(X_test, Y_test, verbose=0)
-    y_score = model.predict_proba(X_test)
+    score = model.evaluate(X_test, Y_test, batch_size=batch_size, verbose=0)
+    y_score = model.predict(X_test, batch_size=batch_size, verbose=0)
 
     # Calculate confusion matrix
     y_predict = np.argmax(y_score, axis=1)
@@ -128,7 +129,8 @@ def train_model(nb_classes=20,
 
     # Plot the confusion matrix
     class_names = np.arange(nb_classes)
-    class_names_original = le.inverse_transform(class_names)
+    class_names_original = le.inverse_transform(np.arange(le.classes_.shape[0]))
+    # TODO: How it worked with class_names previously if there is more classes in it than in le?
     plt.figure(figsize=(14, 14))
     utility.plot_confusion_matrix(cm, classes=class_names_original,
                                   normalize=True,
@@ -143,10 +145,11 @@ def train_model(nb_classes=20,
     print('Test accuracy:', score[1])
     print('\nTest results on each slice:')
     scores = classification_report(y_true, y_predict,
-                                   target_names=class_names_original)
+                                   target_names=class_names_original, zero_division=np.nan)
     scores_dict = classification_report(y_true, y_predict,
                                         target_names=class_names_original,
-                                        output_dict=True)
+                                        output_dict=True,
+                                        zero_division=np.nan)
     print(scores)
 
     # Predict artist using pooling methodology

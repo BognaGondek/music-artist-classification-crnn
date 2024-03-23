@@ -350,8 +350,8 @@ def predict_artist(model, X, Y, S,
             prediction_summary_trim = predictions
 
         # get most frequent class
-        prediction = stats.mode(prediction_summary_trim)[0][0]
-        actual = stats.mode(np.argmax(Y_song))[0][0]
+        prediction = stats.mode(prediction_summary_trim)[0]
+        actual = stats.mode(np.argmax(Y_song))[0]
 
         # Keeping track of overall song classification accuracy
         prediction_list.append(prediction)
@@ -372,12 +372,14 @@ def predict_artist(model, X, Y, S,
                           title='Confusion matrix for pooled results' +
                                 ' with normalization')
     class_report = classification_report(actual_array, prediction_array,
-                                         target_names=class_names)
+                                         target_names=class_names,
+                                         zero_division=np.nan)
     print(class_report)
 
     class_report_dict = classification_report(actual_array, prediction_array,
                                               target_names=class_names,
-                                              output_dict=True)
+                                              output_dict=True,
+                                              zero_division=np.nan)
     return (class_report, class_report_dict)
 
 
