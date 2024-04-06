@@ -11,13 +11,14 @@ from sklearn.manifold import TSNE
 
 import src.models as models
 import src.utility as utility
+from keras import models as keras_models
 
 if __name__ == '__main__':
 
     # set these parameters
     random_states = 21
     slice_length = 313
-    checkpoint_path = 'weights/20_313_21'
+    checkpoint_path = 'weights_song_split/20_313_0'
 
     # leave as-is
     load_checkpoint = True
@@ -49,11 +50,13 @@ if __name__ == '__main__':
                   metrics=['accuracy'])
 
     # Initialize weights using checkpoint if it exists
-    if isfile(checkpoint_path):
-        print('Checkpoint file detected. Loading weights.')
-        model.load_weights(checkpoint_path)
-    else:
-        raise Exception('no checkpoint for {}'.format(checkpoint_path))
+    # if isfile(checkpoint_path):
+    #     print('Checkpoint file detected. Loading weights.')
+    #     model = keras_models.load_model(weights)
+    # else:
+    #     raise Exception('no checkpoint for {}'.format(checkpoint_path))
+
+    model = keras_models.load_model(checkpoint_path)
 
     # drop final dense layer and activation
     print("Modifying model and predicting representation")
@@ -63,7 +66,7 @@ if __name__ == '__main__':
 
     # predict representation
     print("Predicting")
-    X_rep = model.predict(X)
+    X_rep = model.predict(X, batch_size=4)
 
     print("Garbage collection")
     del X

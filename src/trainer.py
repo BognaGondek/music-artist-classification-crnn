@@ -86,7 +86,7 @@ def train_model(nb_classes=20,
     model.summary()
 
     # Initialize weights using checkpoint if it exists
-    if load_checkpoint:
+    if load_checkpoint:  # TODO: Correct loading...
         print("Looking for previous weights...")
         if isfile(weights):
             print('Checkpoint file detected. Loading weights.')
