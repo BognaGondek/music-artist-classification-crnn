@@ -288,18 +288,49 @@ def plot_confusion_matrix(cm, classes,
     plt.xlabel('Predicted label')
 
 
-def plot_history(history, title="model accuracy"):
+def combine_history(histories):
+    mean_history = {'accuracy': [], 'val_accuracy': [], 'loss': [], 'val_loss': []}
+
+    for key in mean_history.keys():
+        for history in histories:
+            mean_history[key].append(history[key])
+        mean_history[key] = np.mean(mean_history[key], axis=0)
+
+    return mean_history
+
+
+def plot_history(training_acc_loss, iterations):
     """
     This function plots the training and validation accuracy
      per epoch of training
     """
-    plt.plot(history.history['acc'])
-    plt.plot(history.history['val_acc'])
-    plt.title(title)
+    histories = [data['history'] for data in training_acc_loss]
+    history = combine_history(histories)
+    epochs = np.arange(start=0, stop=len(training_acc_loss[0]['history']['accuracy']), step=1)
+
+    plt.figure()
+    plt.plot(history['accuracy'])
+    plt.plot(history['val_accuracy'])
+    plt.title(f'Mean accuracy: iterations {iterations} |\n{training_acc_loss[0]["configuration"]}')
     plt.ylabel('accuracy')
     plt.xlabel('epoch')
-    plt.legend(['train', 'test'], loc='lower right')
-    plt.show()
+    plt.legend(['train', 'validation'], loc='lower right')
+    plt.xticks(epochs)
+    plt.tight_layout()
+    # plt.show()
+    plt.savefig(f'training _curves{os.sep}acc_{training_acc_loss[0]["stamp"]}.png')
+
+    plt.figure()
+    plt.plot(history['loss'])
+    plt.plot(history['val_loss'])
+    plt.title(f'Mean loss: iterations {iterations} |\n{training_acc_loss[0]["configuration"]}')
+    plt.ylabel('loss')
+    plt.xlabel('epoch')
+    plt.legend(['train', 'validation'], loc='lower right')
+    plt.xticks(epochs)
+    plt.tight_layout()
+    # plt.show()
+    plt.savefig(f'training _curves{os.sep}loss_{training_acc_loss[0]["stamp"]}.png')
 
     return
 

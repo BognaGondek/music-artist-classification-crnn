@@ -9,6 +9,7 @@ import pandas as pd
 import gc
 
 import src.trainer as trainer
+import src.utility as utility
 
 if __name__ == '__main__':
 
@@ -22,22 +23,23 @@ if __name__ == '__main__':
     29.12s 911 frames
     '''
 
-    slice_lengths = [911, 628, 313, 157, 94, 32]
+    slice_lengths = [911]  # , 628, 313, 157, 94, 32]
     random_state_list = [0, 21, 42]
-    iterations = 1
+    iterations = 2
     summary_metrics_output_folder = 'trials_song_split'
     for slice_len in slice_lengths:
 
         scores = []
         pooling_scores = []
+        training_acc_loss = []
         for i in range(iterations):
-            score, pooling_score = trainer.train_model(
+            score, pooling_score, training_data = trainer.train_model(
                 nb_classes=20,
                 slice_length=slice_len,
                 lr=0.001,
                 train=True,
                 load_checkpoint=True,
-                plots=False,
+                plots=True,
                 album_split=False,
                 random_states=random_state_list[i],
                 save_metrics=True,
@@ -46,6 +48,10 @@ if __name__ == '__main__':
 
             scores.append(score['weighted avg'])
             pooling_scores.append(pooling_score['weighted avg'])
+
+            if training_data:
+                training_acc_loss.append(training_data)
+
             gc.collect()
 
         os.makedirs(summary_metrics_output_folder, exist_ok=True)
@@ -56,3 +62,6 @@ if __name__ == '__main__':
         pd.DataFrame(pooling_scores).to_csv(
             '{}/{}_pooled_score.csv'.format(
                 summary_metrics_output_folder, slice_len))
+
+        if training_acc_loss:
+            utility.plot_history(training_acc_loss, iterations)

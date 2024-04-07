@@ -12,6 +12,8 @@ from keras import models as keras_models
 
 from sklearn.metrics import confusion_matrix, classification_report
 
+slice_len_translation = {32: 1, 94: 3, 157: 5, 188: 6, 313: 10, 628: 20, 911: 30}
+
 
 def train_model(nb_classes=20,
                 slice_length=911,
@@ -24,7 +26,7 @@ def train_model(nb_classes=20,
                 save_metrics_folder='metrics',
                 save_weights_folder='weights',
                 batch_size=4,
-                nb_epochs=1,
+                nb_epochs=2,
                 early_stop=10,
                 lr=0.0001,
                 album_split=True,
@@ -43,14 +45,14 @@ def train_model(nb_classes=20,
     if not album_split:
         # song split
         Y_train, X_train, S_train, Y_test, X_test, S_test, \
-        Y_val, X_val, S_val = \
+            Y_val, X_val, S_val = \
             utility.load_dataset_song_split(song_folder_name=song_folder,
                                             artist_folder=artist_folder,
                                             nb_classes=nb_classes,
                                             random_state=random_states)
     else:
         Y_train, X_train, S_train, Y_test, X_test, S_test, \
-        Y_val, X_val, S_val = \
+            Y_val, X_val, S_val = \
             utility.load_dataset_album_split(song_folder_name=song_folder,
                                              artist_folder=artist_folder,
                                              nb_classes=nb_classes,
@@ -110,7 +112,18 @@ def train_model(nb_classes=20,
                             verbose=1, validation_data=(X_val, Y_val),
                             callbacks=[checkpointer, earlystopper])
         if plots:
-            utility.plot_history(history)
+            time = slice_len_translation[slice_length]
+            level = 'album_split' if album_split else 'song_split'
+            stamp = f'{time}{batch_size}{nb_epochs}{early_stop}{lr}{level}'
+            config = (f'split {time}s | batch size {batch_size} | epochs {nb_epochs} |\n'
+                      f'early stop {early_stop} | learning rate {lr} | level {level}')
+            # utility.plot_history(history, title=title, file_name=plt_name)
+
+    if train and plots:
+        hist = {key: value for key, value in history.history.items()}
+        training_data = {'history': hist, 'configuration': config, 'stamp': stamp}
+    else:
+        training_data = None
 
     # Load weights that gave best performance on validation set
     model = keras_models.load_model(weights)
@@ -175,4 +188,4 @@ def train_model(nb_classes=20,
             f.write('\n\n Scores when pooling song slices:\n')
             f.write(str(pooling_scores))
 
-    return (scores_dict, pooled_scores_dict)
+    return scores_dict, pooled_scores_dict, training_data
