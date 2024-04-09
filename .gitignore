@@ -16,3 +16,20 @@ song_split/
 
 weights_album_split/
 
+metrics/
+
+metrics_song_split/
+
+representation_output/
+
+training _curves/
+
+trials_song_split/
+
+venv/
+
+weights_song_split/
+
+spectrograms.png
+
+

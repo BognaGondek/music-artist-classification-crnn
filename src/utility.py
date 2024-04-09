@@ -326,6 +326,7 @@ def plot_mean_history(histories,
     plt.xticks(epochs)
     plt.tight_layout()
     plt.savefig(f'training _curves{os.sep}acc_{stamp}.png')
+    plt.close()
     if not silent:
         plt.show()
 
@@ -341,6 +342,7 @@ def plot_mean_history(histories,
     plt.savefig(f'training _curves{os.sep}loss_{stamp}.png')
     if not silent:
         plt.show()
+    plt.close()
 
     return
 
@@ -353,7 +355,8 @@ def predict_artist(model, x, y, s,
     This function takes slices of songs and predicts their output.
     For each song, it votes on the most frequent artist.
     """
-    print("Test results when pooling slices by song and voting:")
+    if verbose:
+        print("Test results when pooling slices by song and voting:")
     # Obtain the list of songs
     songs = np.unique(s)
 
@@ -415,7 +418,8 @@ def predict_artist(model, x, y, s,
     class_report = classification_report(actual_array, prediction_array,
                                          target_names=class_names,
                                          zero_division=np.nan)
-    print(class_report)
+    if verbose:
+        print(class_report)
 
     class_report_dict = classification_report(actual_array, prediction_array,
                                               target_names=class_names,
