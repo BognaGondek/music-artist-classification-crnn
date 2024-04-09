@@ -19,6 +19,7 @@ if __name__ == '__main__':
     random_states = 21
     slice_length = 313
     checkpoint_path = 'weights_song_split/20_313_0'
+    batch_size = 4
 
     # leave as-is
     load_checkpoint = True
@@ -64,7 +65,7 @@ if __name__ == '__main__':
 
     # predict representation
     print("Predicting")
-    X_rep = model.predict(X, batch_size=4)
+    X_rep = model.predict(X, batch_size=batch_size)
 
     print("Garbage collection")
     del X
