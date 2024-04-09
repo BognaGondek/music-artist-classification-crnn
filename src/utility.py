@@ -90,7 +90,8 @@ def load_dataset(song_folder_name='song_data',
     song_list = os.listdir(song_folder_name)
 
     # Load the list of artists
-    artist_list = os.listdir(artist_folder)
+    artist_list = [path for path in os.listdir(artist_folder) if
+                   os.path.isdir(artist_folder + os.sep + path)]
 
     # select the appropriate number of classes
     prng = RandomState(random_state)
@@ -120,7 +121,8 @@ def load_dataset_album_split(song_folder_name='song_data',
     song_list = os.listdir(song_folder_name)
 
     # Load the list of artists
-    artist_list = os.listdir(artist_folder)
+    artist_list = [path for path in os.listdir(artist_folder) if
+                   os.path.isdir(artist_folder + os.sep + path)]
 
     train_albums = []
     test_albums = []
@@ -164,8 +166,8 @@ def load_dataset_album_split(song_folder_name='song_data',
                 S_val.append(loaded_song[2])
 
     return Y_train, X_train, S_train, \
-           Y_test, X_test, S_test, \
-           Y_val, X_val, S_val
+        Y_test, X_test, S_test, \
+        Y_val, X_val, S_val
 
 
 def load_dataset_song_split(song_folder_name='song_data',
@@ -189,8 +191,8 @@ def load_dataset_song_split(song_folder_name='song_data',
         shuffle=True, stratify=Y_train, random_state=random_state)
 
     return Y_train, X_train, S_train, \
-           Y_test, X_test, S_test, \
-           Y_val, X_val, S_val
+        Y_test, X_test, S_test, \
+        Y_val, X_val, S_val
 
 
 def slice_songs(X, Y, S, length=911):
