@@ -19,29 +19,29 @@ from scipy import stats
 
 
 def visualize_spectrogram(path, duration=None,
-                          offset=0, sr=16000, n_mels=128, n_fft=2048,
+                          offset=0, sr=16000, n_mel=128, n_fft=2048,
                           hop_length=512):
     """This function creates a visualization of a spectrogram
     given the path to an audio file."""
 
     # Make a mel-scaled power (energy-squared) spectrogram
     y, sr = librosa.load(path, sr=sr, duration=duration, offset=offset)
-    S = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=n_mels, n_fft=n_fft,
+    s = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=n_mel, n_fft=n_fft,
                                        hop_length=hop_length)
 
     # Convert to log scale (dB)
-    log_S = librosa.power_to_db(S, ref=1.0)
+    log_s = librosa.power_to_db(s, ref=1.0)
 
     # Render output spectrogram in the console
     plt.figure(figsize=(12, 5))
-    librosa.display.specshow(log_S, sr=sr, x_axis='time', y_axis='mel')
+    librosa.display.specshow(log_s, sr=sr, x_axis='time', y_axis='mel')
     plt.title('mel power spectrogram')
     plt.colorbar(format='%+02.0f dB')
     plt.tight_layout()
 
 
 def create_dataset(artist_folder='artists', save_folder='song_data',
-                   sr=16000, n_mels=128,
+                   sr=16000, n_mel=128,
                    n_fft=2048, hop_length=512):
     """This function creates the dataset given a folder
      with the correct structure (artist_folder/artists/albums/*.mp3)
@@ -67,11 +67,11 @@ def create_dataset(artist_folder='artists', save_folder='song_data',
 
                 # Create mel spectrogram and convert it to the log scale
                 y, sr = librosa.load(song_path, sr=sr)
-                S = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=n_mels,
+                s = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=n_mel,
                                                    n_fft=n_fft,
                                                    hop_length=hop_length)
-                log_S = librosa.power_to_db(S, ref=1.0)
-                data = (artist, log_S, song)
+                log_s = librosa.power_to_db(s, ref=1.0)
+                data = (artist, log_s, song)
 
                 # Save each song
                 save_name = artist + '_%%-%%_' + album + '_%%-%%_' + song
@@ -140,9 +140,9 @@ def load_dataset_album_split(song_folder_name='song_data',
     artists = prng.choice(artist_list, size=nb_classes, replace=False)
 
     # Create empty lists
-    Y_train, Y_test, Y_val = [], [], []
-    X_train, X_test, X_val = [], [], []
-    S_train, S_test, S_val = [], [], []
+    y_train, y_test, y_val = [], [], []
+    x_train, x_test, x_val = [], [], []
+    s_train, s_test, s_val = [], [], []
 
     # Load each song into memory if the artist is included and return
     for song in song_list:
@@ -153,21 +153,21 @@ def load_dataset_album_split(song_folder_name='song_data',
 
         if loaded_song[0] in artists:
             if artist_album in train_albums:
-                Y_train.append(loaded_song[0])
-                X_train.append(loaded_song[1])
-                S_train.append(loaded_song[2])
+                y_train.append(loaded_song[0])
+                x_train.append(loaded_song[1])
+                s_train.append(loaded_song[2])
             elif artist_album in test_albums:
-                Y_test.append(loaded_song[0])
-                X_test.append(loaded_song[1])
-                S_test.append(loaded_song[2])
+                y_test.append(loaded_song[0])
+                x_test.append(loaded_song[1])
+                s_test.append(loaded_song[2])
             elif artist_album in val_albums:
-                Y_val.append(loaded_song[0])
-                X_val.append(loaded_song[1])
-                S_val.append(loaded_song[2])
+                y_val.append(loaded_song[0])
+                x_val.append(loaded_song[1])
+                s_val.append(loaded_song[2])
 
-    return Y_train, X_train, S_train, \
-        Y_test, X_test, S_test, \
-        Y_val, X_val, S_val
+    return y_train, x_train, s_train, \
+        y_test, x_test, s_test, \
+        y_val, x_val, s_val
 
 
 def load_dataset_song_split(song_folder_name='song_data',
@@ -176,26 +176,26 @@ def load_dataset_song_split(song_folder_name='song_data',
                             test_split_size=0.1,
                             validation_split_size=0.1,
                             random_state=42):
-    Y, X, S = load_dataset(song_folder_name=song_folder_name,
+    y, x, s = load_dataset(song_folder_name=song_folder_name,
                            artist_folder=artist_folder,
                            nb_classes=nb_classes,
                            random_state=random_state)
     # train and test split
-    X_train, X_test, Y_train, Y_test, S_train, S_test = train_test_split(
-        X, Y, S, test_size=test_split_size, stratify=Y,
+    x_train, x_test, y_train, y_test, s_train, s_test = train_test_split(
+        x, y, s, test_size=test_split_size, stratify=y,
         random_state=random_state)
 
     # Create a validation to be used to track progress
-    X_train, X_val, Y_train, Y_val, S_train, S_val = train_test_split(
-        X_train, Y_train, S_train, test_size=validation_split_size,
-        shuffle=True, stratify=Y_train, random_state=random_state)
+    x_train, x_val, y_train, y_val, s_train, s_val = train_test_split(
+        x_train, y_train, s_train, test_size=validation_split_size,
+        shuffle=True, stratify=y_train, random_state=random_state)
 
-    return Y_train, X_train, S_train, \
-        Y_test, X_test, S_test, \
-        Y_val, X_val, S_val
+    return y_train, x_train, s_train, \
+        y_test, x_test, s_test, \
+        y_val, x_val, s_val
 
 
-def slice_songs(X, Y, S, length=911):
+def slice_songs(x, y, s, length=911):
     """Slices the spectrogram into sub-spectrograms according to length"""
 
     # Create empty lists for train and test sets
@@ -204,17 +204,17 @@ def slice_songs(X, Y, S, length=911):
     song_name = []
 
     # Slice up songs using the length specified
-    for i, song in enumerate(X):
+    for i, song in enumerate(x):
         slices = int(song.shape[1] / length)
         for j in range(slices - 1):
             spectrogram.append(song[:, length * j:length * (j + 1)])
-            artist.append(Y[i])
-            song_name.append(S[i])
+            artist.append(y[i])
+            song_name.append(s[i])
 
     return np.array(spectrogram), np.array(artist), np.array(song_name)
 
 
-def create_spectrogram_plots(artist_folder='artists', sr=16000, n_mels=128,
+def create_spectrogram_plots(artist_folder='artists', sr=16000, n_mel=128,
                              n_fft=2048, hop_length=512):
     """Create a spectrogram from a randomly selected song
      for each artist and plot"""
@@ -244,13 +244,13 @@ def create_spectrogram_plots(artist_folder='artists', sr=16000, n_mels=128,
 
         # Create mel spectrogram
         y, sr = librosa.load(song_path, sr=sr, offset=60, duration=3)
-        S = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=n_mels,
+        s = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=n_mel,
                                            n_fft=n_fft, hop_length=hop_length)
-        log_S = librosa.power_to_db(S, ref=1.0)
+        log_s = librosa.power_to_db(s, ref=1.0)
 
         # Plot on grid
         plt.axes(ax[row, col])
-        librosa.display.specshow(log_S, sr=sr)
+        librosa.display.specshow(log_s, sr=sr)
         plt.title(artist)
         col += 1
         if col == 5:
@@ -291,6 +291,10 @@ def plot_confusion_matrix(cm, classes,
 
 
 def combine_history(histories):
+    """
+        This function makes mean of each training history value
+        (training / validation accuracy / loss) from each iteration.
+        """
     mean_history = {'accuracy': [], 'val_accuracy': [], 'loss': [], 'val_loss': []}
 
     for key in mean_history.keys():
@@ -301,43 +305,47 @@ def combine_history(histories):
     return mean_history
 
 
-def plot_history(training_acc_loss, iterations):
+def plot_mean_history(histories,
+                      information,
+                      stamp,
+                      silent=True):
     """
     This function plots the training and validation accuracy
-     per epoch of training
+    and loss per epoch of training (averaged from each iteration).
     """
-    histories = [data['history'] for data in training_acc_loss]
     history = combine_history(histories)
-    epochs = np.arange(start=0, stop=len(training_acc_loss[0]['history']['accuracy']), step=1)
+    epochs = np.arange(start=0, stop=len(histories[0]['accuracy']), step=1)
 
     plt.figure()
     plt.plot(history['accuracy'])
     plt.plot(history['val_accuracy'])
-    plt.title(f'Mean accuracy: iterations {iterations} |\n{training_acc_loss[0]["configuration"]}')
+    plt.title(f'Mean accuracy: {information}')
     plt.ylabel('accuracy')
     plt.xlabel('epoch')
     plt.legend(['train', 'validation'], loc='lower right')
     plt.xticks(epochs)
     plt.tight_layout()
-    # plt.show()
-    plt.savefig(f'training _curves{os.sep}acc_{training_acc_loss[0]["stamp"]}.png')
+    plt.savefig(f'training _curves{os.sep}acc_{stamp}.png')
+    if not silent:
+        plt.show()
 
     plt.figure()
     plt.plot(history['loss'])
     plt.plot(history['val_loss'])
-    plt.title(f'Mean loss: iterations {iterations} |\n{training_acc_loss[0]["configuration"]}')
+    plt.title(f'Mean loss: {information}')
     plt.ylabel('loss')
     plt.xlabel('epoch')
     plt.legend(['train', 'validation'], loc='lower right')
     plt.xticks(epochs)
     plt.tight_layout()
-    # plt.show()
-    plt.savefig(f'training _curves{os.sep}loss_{training_acc_loss[0]["stamp"]}.png')
+    plt.savefig(f'training _curves{os.sep}loss_{stamp}.png')
+    if not silent:
+        plt.show()
 
     return
 
 
-def predict_artist(model, X, Y, S,
+def predict_artist(model, x, y, s,
                    le, class_names,
                    slices=None, verbose=False,
                    ml_mode=False):
@@ -347,7 +355,7 @@ def predict_artist(model, X, Y, S,
     """
     print("Test results when pooling slices by song and voting:")
     # Obtain the list of songs
-    songs = np.unique(S)
+    songs = np.unique(s)
 
     prediction_list = []
     actual_list = []
@@ -356,17 +364,17 @@ def predict_artist(model, X, Y, S,
     for song in songs:
 
         # Grab all slices related to a particular song
-        X_song = X[S == song]
-        Y_song = Y[S == song]
+        x_song = x[s == song]
+        y_song = y[s == song]
 
         # If not using full song, shuffle and take up to a number of slices
-        if slices and slices <= X_song.shape[0]:
-            X_song, Y_song = shuffle(X_song, Y_song)
-            X_song = X_song[:slices]
-            Y_song = Y_song[:slices]
+        if slices and slices <= x_song.shape[0]:
+            x_song, y_song = shuffle(x_song, y_song)
+            x_song = x_song[:slices]
+            y_song = y_song[:slices]
 
         # Get probabilities of each class
-        predictions = model.predict(X_song, verbose=0)
+        predictions = model.predict(x_song, verbose=0)
 
         if not ml_mode:
             # Get list of highest probability classes and their probability
@@ -384,7 +392,7 @@ def predict_artist(model, X, Y, S,
 
         # get most frequent class
         prediction = stats.mode(prediction_summary_trim)[0]
-        actual = stats.mode(np.argmax(Y_song))[0]
+        actual = stats.mode(np.argmax(y_song))[0]
 
         # Keeping track of overall song classification accuracy
         prediction_list.append(prediction)
@@ -413,48 +421,48 @@ def predict_artist(model, X, Y, S,
                                               target_names=class_names,
                                               output_dict=True,
                                               zero_division=np.nan)
-    return (class_report, class_report_dict)
+    return class_report, class_report_dict
 
 
-def encode_labels(Y, le=None, enc=None):
+def encode_labels(y, le=None, enc=None):
     """Encodes target variables into numbers and then one hot encodings"""
 
     # initialize encoders
-    N = Y.shape[0]
+    n = y.shape[0]
 
     # Encode the labels
     if le is None:
         le = preprocessing.LabelEncoder()
-        Y_le = le.fit_transform(Y).reshape(N, 1)
+        y_le = le.fit_transform(y).reshape(n, 1)
     else:
-        Y_le = le.transform(Y).reshape(N, 1)
+        y_le = le.transform(y).reshape(n, 1)
 
     # convert into one hot encoding
     if enc is None:
         enc = preprocessing.OneHotEncoder()
-        Y_enc = enc.fit_transform(Y_le).toarray()
+        y_enc = enc.fit_transform(y_le).toarray()
     else:
-        Y_enc = enc.transform(Y_le).toarray()
+        y_enc = enc.transform(y_le).toarray()
 
     # return encoders to re-use on other data
-    return Y_enc, le, enc
+    return y_enc, le, enc
 
 
-def simple_encoding(Y, le=None):
+def simple_encoding(y, le=None):
     """Encodes target variables into numbers"""
 
     # initialize encoders
-    N = Y.shape[0]
+    # N = y.shape[0]
 
     # Encode the labels
     if le is None:
         le = preprocessing.LabelEncoder()
-        Y_le = le.fit_transform(Y)
+        y_le = le.fit_transform(y)
     else:
-        Y_le = le.transform(Y)
+        y_le = le.transform(y)
 
     # return encoders to re-use on other data
-    return Y_le, le
+    return y_le, le
 
 
 if __name__ == '__main__':
@@ -466,7 +474,7 @@ if __name__ == '__main__':
 
     if create_data:
         create_dataset(artist_folder='artists', save_folder='song_data',
-                       sr=16000, n_mels=128, n_fft=2048,
+                       sr=16000, n_mel=128, n_fft=2048,
                        hop_length=512)
 
     if create_visuals:
@@ -477,7 +485,7 @@ if __name__ == '__main__':
             offset=60, duration=29.12)
 
         # Create spectrogram subplots
-        create_spectrogram_plots(artist_folder='artists', sr=16000, n_mels=128,
+        create_spectrogram_plots(artist_folder='artists', sr=16000, n_mel=128,
                                  n_fft=2048, hop_length=512)
         if save_visuals:
             plt.savefig(os.path.join('spectrograms.png'),

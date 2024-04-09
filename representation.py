@@ -1,6 +1,6 @@
 import gc
 import os
-from os.path import isfile
+from os.path import exists
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -44,19 +44,17 @@ if __name__ == '__main__':
     Y, le, enc = utility.encode_labels(Y)
 
     # build the model
-    model = models.CRNN2D(X.shape, nb_classes=Y.shape[1])
+    model = models.crnn2d(X.shape, nb_classes=Y.shape[1])
     model.compile(loss='categorical_crossentropy',
                   optimizer=Adam(lr=lr),
                   metrics=['accuracy'])
 
     # Initialize weights using checkpoint if it exists
-    # if isfile(checkpoint_path):
-    #     print('Checkpoint file detected. Loading weights.')
-    #     model = keras_models.load_model(weights)
-    # else:
-    #     raise Exception('no checkpoint for {}'.format(checkpoint_path))
-
-    model = keras_models.load_model(checkpoint_path)
+    if exists(checkpoint_path):
+        print('Checkpoint file detected. Loading weights.')
+        model = keras_models.load_model(checkpoint_path)
+    else:
+        raise Exception('no checkpoint for {}'.format(checkpoint_path))
 
     # drop final dense layer and activation
     print("Modifying model and predicting representation")

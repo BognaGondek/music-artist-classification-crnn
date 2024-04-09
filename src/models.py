@@ -12,11 +12,11 @@ from keras.layers import BatchNormalization
 from keras.layers import GRU, LSTM
 
 
-def CRNN2D(X_shape, nb_classes):
-    '''
+def crnn2d(x_shape, nb_classes):
+    """
     Model used for evaluation in paper. Inspired by K. Choi model in:
     https://github.com/keunwoochoi/music-auto_tagging-keras/blob/master/music_tagger_crnn.py
-    '''
+    """
 
     nb_layers = 4  # number of convolutional layers
     nb_filters = [64, 128, 128, 128]  # filter sizes
@@ -26,7 +26,7 @@ def CRNN2D(X_shape, nb_classes):
                  (4, 2)]  # size of pooling area
 
     # shape of input data (frequency, time, channels)
-    input_shape = (X_shape[1], X_shape[2], X_shape[3])
+    input_shape = (x_shape[1], x_shape[2], x_shape[3])
     frequency_axis = 1
     time_axis = 2
     channel_axis = 3
@@ -81,10 +81,10 @@ Models below this point were only pre-tested and were not presented in the paper
 
 ###############################################################################
 
-def CRNN2DLarger(X_shape, nb_classes):
-    '''
+def crnn2d_larger(x_shape, nb_classes):
+    """
     Making the previous model larger and deeper
-    '''
+    """
     nb_layers = 5  # number of convolutional layers
     nb_filters = [64, 128, 256, 512, 512]
     kernel_size = (3, 3)  # convolution kernel size
@@ -94,7 +94,7 @@ def CRNN2DLarger(X_shape, nb_classes):
     # pool_size = [(4,2), (4,2), (4,1), (2,1)] this worked well
 
     # shape of input data (frequency, time, channels)
-    input_shape = (X_shape[1], X_shape[2], X_shape[3])
+    input_shape = (x_shape[1], x_shape[2], x_shape[3])
     frequency_axis = 1
     time_axis = 2
     channel_axis = 3
@@ -143,10 +143,10 @@ def CRNN2DLarger(X_shape, nb_classes):
     return model
 
 
-def CRNN2DVGG(X_shape, nb_classes):
-    '''
+def crnn2dvgg(x_shape, nb_classes):
+    """
     Based on VGG-16 Architecture
-    '''
+    """
     nb_layers = 5  # number of convolutional layers
     nb_filters = [64, 128, 256, 512, 512]
     kernel_size = (3, 3)  # convolution kernel size
@@ -156,7 +156,7 @@ def CRNN2DVGG(X_shape, nb_classes):
     # pool_size = [(4,2), (4,2), (4,1), (2,1)] this worked well
 
     # shape of input data (frequency, time, channels)
-    input_shape = (X_shape[1], X_shape[2], X_shape[3])
+    input_shape = (x_shape[1], x_shape[2], x_shape[3])
     frequency_axis = 1
     time_axis = 2
     channel_axis = 3
@@ -227,10 +227,10 @@ def CRNN2DVGG(X_shape, nb_classes):
     return model
 
 
-def CRNN1D(X_shape, nb_classes):
-    '''
+def crnn1d(x_shape, nb_classes):
+    """
     Based on 1D convolution
-    '''
+    """
 
     nb_layers = 3  # number of convolutional layers
     kernel_size = 5  # convolution kernel size
@@ -238,7 +238,7 @@ def CRNN1D(X_shape, nb_classes):
     pool_size = 2  # size of pooling area
 
     # shape of input data (frequency, time, channels)
-    input_shape = (X_shape[1], X_shape[2], X_shape[3])
+    input_shape = (x_shape[1], x_shape[2], x_shape[3])
     frequency_axis = 1
     time_axis = 2
     channel_axis = 3
@@ -276,12 +276,12 @@ def CRNN1D(X_shape, nb_classes):
     return model
 
 
-def RNN(X_shape, nb_classes):
-    '''
+def rnn(x_shape, nb_classes):
+    """
     Implementing only the RNN
-    '''
+    """
     # shape of input data (frequency, time, channels)
-    input_shape = (X_shape[1], X_shape[2], X_shape[3])
+    input_shape = (x_shape[1], x_shape[2], x_shape[3])
     frequency_axis = 1
     time_axis = 2
     channel_axis = 3

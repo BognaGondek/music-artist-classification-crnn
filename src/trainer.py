@@ -4,15 +4,13 @@ import src.models as models
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-from os.path import isfile
+from os.path import exists
 
 from keras.callbacks import ModelCheckpoint, EarlyStopping
 from keras.optimizers import Adam
 from keras import models as keras_models
 
 from sklearn.metrics import confusion_matrix, classification_report
-
-slice_len_translation = {32: 1, 94: 3, 157: 5, 188: 6, 313: 10, 628: 20, 911: 30}
 
 
 def train_model(nb_classes=20,
@@ -42,57 +40,56 @@ def train_model(nb_classes=20,
 
     print("Loading dataset...")
 
-    if not album_split:
-        # song split
-        Y_train, X_train, S_train, Y_test, X_test, S_test, \
-            Y_val, X_val, S_val = \
-            utility.load_dataset_song_split(song_folder_name=song_folder,
-                                            artist_folder=artist_folder,
-                                            nb_classes=nb_classes,
-                                            random_state=random_states)
-    else:
-        Y_train, X_train, S_train, Y_test, X_test, S_test, \
-            Y_val, X_val, S_val = \
+    if album_split:
+        y_train, x_train, s_train, y_test, x_test, s_test, \
+            y_val, x_val, s_val = \
             utility.load_dataset_album_split(song_folder_name=song_folder,
                                              artist_folder=artist_folder,
                                              nb_classes=nb_classes,
                                              random_state=random_states)
+    else:
+        y_train, x_train, s_train, y_test, x_test, s_test, \
+            y_val, x_val, s_val = \
+            utility.load_dataset_song_split(song_folder_name=song_folder,
+                                            artist_folder=artist_folder,
+                                            nb_classes=nb_classes,
+                                            random_state=random_states)
 
     print("Loaded and split dataset. Slicing songs...")
 
     # Create slices out of the songs
-    X_train, Y_train, S_train = utility.slice_songs(X_train, Y_train, S_train,
+    x_train, y_train, s_train = utility.slice_songs(x_train, y_train, s_train,
                                                     length=slice_length)
-    X_val, Y_val, S_val = utility.slice_songs(X_val, Y_val, S_val,
+    x_val, y_val, s_val = utility.slice_songs(x_val, y_val, s_val,
                                               length=slice_length)
-    X_test, Y_test, S_test = utility.slice_songs(X_test, Y_test, S_test,
+    x_test, y_test, s_test = utility.slice_songs(x_test, y_test, s_test,
                                                  length=slice_length)
 
-    print("Training set label counts:", np.unique(Y_train, return_counts=True))
+    print("Training set label counts:", np.unique(y_train, return_counts=True))
 
     # Encode the target vectors into one-hot encoded vectors
-    Y_train, le, enc = utility.encode_labels(Y_train)
-    Y_test, le, enc = utility.encode_labels(Y_test, le, enc)
-    Y_val, le, enc = utility.encode_labels(Y_val, le, enc)
+    y_train, le, enc = utility.encode_labels(y_train)
+    y_test, le, enc = utility.encode_labels(y_test, le, enc)
+    y_val, le, enc = utility.encode_labels(y_val, le, enc)
 
     # Reshape data as 2d convolutional tensor shape
-    X_train = X_train.reshape(X_train.shape + (1,))
-    X_val = X_val.reshape(X_val.shape + (1,))
-    X_test = X_test.reshape(X_test.shape + (1,))
+    x_train = x_train.reshape(x_train.shape + (1,))
+    x_val = x_val.reshape(x_val.shape + (1,))
+    x_test = x_test.reshape(x_test.shape + (1,))
 
-    # build the model
-    model = models.CRNN2D(X_train.shape, nb_classes=Y_train.shape[1])
+    # Build the model
+    model = models.crnn2d(x_train.shape, nb_classes=y_train.shape[1])
     model.compile(loss='categorical_crossentropy',
                   optimizer=Adam(learning_rate=lr),
                   metrics=['accuracy'])
     model.summary()
 
     # Initialize weights using checkpoint if it exists
-    if load_checkpoint:  # TODO: Correct loading...
+    if load_checkpoint:
         print("Looking for previous weights...")
-        if isfile(weights):
+        if exists(weights):
             print('Checkpoint file detected. Loading weights.')
-            model.load_weights(weights)
+            model = keras_models.load_model(weights)
         else:
             print('No checkpoint file detected.  Starting from scratch.')
     else:
@@ -101,49 +98,39 @@ def train_model(nb_classes=20,
     checkpointer = ModelCheckpoint(filepath=weights,
                                    verbose=1,
                                    save_best_only=True)
-    earlystopper = EarlyStopping(monitor='val_loss', min_delta=0,
-                                 patience=early_stop, verbose=0, mode='auto')
+    early_stopper = EarlyStopping(monitor='val_loss', min_delta=0,
+                                  patience=early_stop, verbose=0, mode='auto')
 
     # Train the model
+    history = None
     if train:
-        print("Input Data Shape", X_train.shape)
-        history = model.fit(X_train, Y_train, batch_size=batch_size,
+        print("Input Data Shape", x_train.shape)
+        history = model.fit(x_train, y_train, batch_size=batch_size,
                             shuffle=True, epochs=nb_epochs,
-                            verbose=1, validation_data=(X_val, Y_val),
-                            callbacks=[checkpointer, earlystopper])
+                            verbose=1, validation_data=(x_val, y_val),
+                            callbacks=[checkpointer, early_stopper])
         if plots:
-            time = slice_len_translation[slice_length]
-            level = 'album_split' if album_split else 'song_split'
-            stamp = f'{time}{batch_size}{nb_epochs}{early_stop}{lr}{level}'
-            config = (f'split {time}s | batch size {batch_size} | epochs {nb_epochs} |\n'
-                      f'early stop {early_stop} | learning rate {lr} | level {level}')
-            # utility.plot_history(history, title=title, file_name=plt_name)
+            history = {key: value for key, value in history.history.items()}
 
-    if train and plots:
-        hist = {key: value for key, value in history.history.items()}
-        training_data = {'history': hist, 'configuration': config, 'stamp': stamp}
-    else:
-        training_data = None
-
-    # Load weights that gave best performance on validation set
+    # Load weights that gave the best performance on validation set
     model = keras_models.load_model(weights)
     filename = os.path.join(save_metrics_folder, str(nb_classes) + '_'
                             + str(slice_length)
                             + '_' + str(random_states) + '.txt')
 
     # Score test model
-    score = model.evaluate(X_test, Y_test, batch_size=batch_size, verbose=0)
-    y_score = model.predict(X_test, batch_size=batch_size, verbose=0)
+    score = model.evaluate(x_test, y_test, batch_size=batch_size, verbose=0)
+    y_score = model.predict(x_test, batch_size=batch_size, verbose=0)
 
     # Calculate confusion matrix
     y_predict = np.argmax(y_score, axis=1)
-    y_true = np.argmax(Y_test, axis=1)
+    y_true = np.argmax(y_test, axis=1)
     cm = confusion_matrix(y_true, y_predict)
 
     # Plot the confusion matrix
     class_names = np.arange(nb_classes)
-    class_names_original = le.inverse_transform(np.arange(le.classes_.shape[0]))
-    # TODO: How it worked with class_names previously if there is more classes in it than in le?
+    class_names_original = le.inverse_transform(class_names)
+
     plt.figure(figsize=(14, 14))
     utility.plot_confusion_matrix(cm, classes=class_names_original,
                                   normalize=True,
@@ -167,7 +154,7 @@ def train_model(nb_classes=20,
 
     # Predict artist using pooling methodology
     pooling_scores, pooled_scores_dict = \
-        utility.predict_artist(model, X_test, Y_test, S_test,
+        utility.predict_artist(model, x_test, y_test, s_test,
                                le, class_names=class_names_original,
                                slices=None, verbose=False)
 
@@ -176,7 +163,7 @@ def train_model(nb_classes=20,
         plt.savefig(filename + '_pooled.png', bbox_inches="tight")
         plt.close()
         with open(filename, 'w') as f:
-            f.write("Training data shape:" + str(X_train.shape))
+            f.write("Training data shape:" + str(x_train.shape))
             f.write('\nnb_classes: ' + str(nb_classes) +
                     '\nslice_length: ' + str(slice_length))
             f.write('\nweights: ' + weights)
@@ -188,4 +175,4 @@ def train_model(nb_classes=20,
             f.write('\n\n Scores when pooling song slices:\n')
             f.write(str(pooling_scores))
 
-    return scores_dict, pooled_scores_dict, training_data
+    return scores_dict, pooled_scores_dict, history
