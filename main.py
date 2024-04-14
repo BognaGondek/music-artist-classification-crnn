@@ -14,7 +14,7 @@ import src.simple_trainer as simple
 from statistics import mean
 
 NR_FRAMES_TO_SEC = {32: 1, 94: 3, 157: 5, 188: 6, 313: 10, 628: 20, 911: 30}
-TRAINING_MODE = False
+TRAINING_MODE = True
 
 if __name__ == '__main__':
 
@@ -28,9 +28,9 @@ if __name__ == '__main__':
     29.12s 911 frames
     '''
 
-    slice_lengths = [911, 628, 313, 157, 94, 32]
+    slice_lengths = [94]  #, 911, 628, 313, 157, 94, 32]
     random_state_list = [0, 21, 42]
-    iterations = 1
+    iterations = 2
     summary_metrics_output_folder = 'trials_song_split'
 
     plots = True
@@ -45,7 +45,7 @@ if __name__ == '__main__':
         # GRU dropout?
         batch_size = 4
         nb_epochs = 2
-        early_stop = 10  # patience
+        early_stop = 15  # patience
         learning_rate = 0.001
 
 
@@ -66,7 +66,7 @@ if __name__ == '__main__':
                     nb_classes=20,
                     slice_length=slice_len,
                     train=True,
-                    load_checkpoint=True,
+                    load_checkpoint=False,
                     plots=plots,
                     album_split=album_split,
                     random_states=random_state_list[i],
@@ -104,7 +104,7 @@ if __name__ == '__main__':
                     load_checkpoint=False,
                     plots=plots,
                     album_split=album_split,
-                    random_states=random_state_list[i],
+                    random_states=random_state_list[i],  # Use the same seed!
                     save_metrics_folder='metrics_song_split',
                     save_weights_folder='weights_song_split',
                     batch_size=batch_size,
@@ -136,4 +136,7 @@ if __name__ == '__main__':
 
         if histories:
             information, stamp = get_info()
-            utility.plot_mean_history(histories, information, stamp)
+            if TRAINING_MODE:
+                utility.plot_histories(histories, information, stamp)
+            else:
+                utility.plot_mean_history(histories, information, stamp)

@@ -65,7 +65,7 @@ def crnn2d(x_shape, nb_classes):
     # recurrent layer
     model.add(GRU(32, return_sequences=True))
     model.add(GRU(32, return_sequences=False))
-    model.add(Dropout(0.3))
+    model.add(Dropout(0.1))  # 0.3
 
     # Output layer
     model.add(Dense(nb_classes))

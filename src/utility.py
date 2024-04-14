@@ -296,13 +296,14 @@ def combine_history(histories):
         (training / validation accuracy / loss) from each iteration.
         """
     mean_history = {'accuracy': [], 'val_accuracy': [], 'loss': [], 'val_loss': []}
+    min_len = min(len(history['accuracy']) for history in histories)
 
     for key in mean_history.keys():
         for history in histories:
-            mean_history[key].append(history[key])
+            mean_history[key].append(history[key][:min_len])
         mean_history[key] = np.mean(mean_history[key], axis=0)
 
-    return mean_history
+    return mean_history, min_len
 
 
 def plot_mean_history(histories,
@@ -313,8 +314,8 @@ def plot_mean_history(histories,
     This function plots the training and validation accuracy
     and loss per epoch of training (averaged from each iteration).
     """
-    history = combine_history(histories)
-    epochs = np.arange(start=0, stop=len(histories[0]['accuracy']), step=1)
+    history, max_epoch = combine_history(histories)
+    epochs = np.arange(start=0, stop=max_epoch, step=10)
 
     plt.figure()
     plt.plot(history['accuracy'])
@@ -343,6 +344,46 @@ def plot_mean_history(histories,
     if not silent:
         plt.show()
     plt.close()
+
+    return
+
+
+def plot_histories(histories,
+                   information,
+                   stamp,
+                   silent=True):
+    """
+    This function plots the training and validation accuracy
+    and loss per epoch of training for each iteration.
+    """
+    max_epoch = max(len(history) for history in histories)
+    step = 10 if max_epoch > 10 else 1
+    epochs = np.arange(start=0, stop=max_epoch, step=step)
+
+    cmap = plt.get_cmap('viridis')
+    colors = cmap(np.linspace(0, 1, len(histories)))
+
+    abs_path = "training _curves"
+
+    def plot_history(hist_key, plt_name, legend):
+        plt.figure()
+        for idx, history in enumerate(histories):
+            plt.plot(history[hist_key], color=colors[idx])
+        plt.title(f'{plt_name}: {information}')
+        plt.ylabel(f'{hist_key}')
+        plt.xlabel('epoch')
+        plt.legend([f'{idx + 1} {legend}' for idx in range(len(histories))], loc='lower right')
+        plt.xticks(epochs)
+        plt.tight_layout()
+        plt.savefig(f'{abs_path}{os.sep}{legend}_{stamp}.png')
+        if not silent:
+            plt.show()
+        plt.close()
+
+    plot_history('accuracy', 'Training accuracy', 'train_acc')
+    plot_history('val_accuracy', 'Validation accuracy', 'val_acc')
+    plot_history('loss', 'Training loss', 'train_loss')
+    plot_history('val_loss', 'Validation loss', 'val_loss')
 
     return
 
