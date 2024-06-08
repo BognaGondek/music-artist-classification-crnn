@@ -11,6 +11,8 @@ from keras import models as keras_models
 
 from sklearn.metrics import classification_report
 
+from src.attention_model import EncoderLayer, MultiHeadAttention, PositionWiseFeedForward, ScaledDotProductAttention
+
 
 def train_model(nb_classes=20,
                 slice_length=911,
@@ -84,8 +86,7 @@ def train_model(nb_classes=20,
 
     checkpointer = ModelCheckpoint(filepath=weights,
                                    verbose=1,
-                                   save_best_only=True,
-                                   save_format='tf')
+                                   save_best_only=True)
     early_stopper = EarlyStopping(monitor='val_loss', min_delta=0,
                                   patience=early_stop, verbose=0, mode='auto')
 
@@ -101,7 +102,10 @@ def train_model(nb_classes=20,
             train_history = {key: value for key, value in history.history.items()}
 
     # Load weights that gave the best performance on validation set
-    model = keras_models.load_model(weights)
+    model = keras_models.load_model(weights, custom_objects={'EncoderLayer': EncoderLayer,
+                                                             'PositionWiseFeedForward': PositionWiseFeedForward,
+                                                             'MultiHeadAttention': MultiHeadAttention,
+                                                             'ScaledDotProductAttention': ScaledDotProductAttention})
 
     # Score test model
     y_score = model.predict(x_val, batch_size=batch_size, verbose=0)

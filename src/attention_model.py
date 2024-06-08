@@ -1,5 +1,4 @@
 import tensorflow as tf
-import keras.backend as k_back
 from keras.layers import (Layer,
                           Dropout,
                           Lambda,
@@ -10,16 +9,17 @@ from keras.layers import (Layer,
                           Concatenate,
                           Conv1D,
                           LayerNormalization)
+import keras.backend as k_back
 
 
 # File from https://github.com/lsdefine/attention-is-all-you-need-keras.
 
 class ScaledDotProductAttention(Layer):
-    def __init__(self, attn_dropout=0.1):
-        super(ScaledDotProductAttention, self).__init__()
+    def __init__(self, attn_dropout=0.1, **kwargs):
+        super(ScaledDotProductAttention, self).__init__(**kwargs)
         self.dropout = Dropout(attn_dropout)
 
-    def __call__(self, q, k, v, mask):  # mask_k or mask_qk
+    def call(self, q, k, v, mask):  # mask_k or mask_qk
         temper = tf.sqrt(tf.cast(tf.shape(k)[-1], dtype='float32'))
         attn = Lambda(lambda x: k_back.batch_dot(x[0], x[1], axes=[2, 2]) / x[2])([q, k, temper])  # shape=(batch, q, k)
         if mask is not None:
@@ -30,11 +30,22 @@ class ScaledDotProductAttention(Layer):
         output = Lambda(lambda x: k_back.batch_dot(x[0], x[1]))([attn, v])
         return output, attn
 
+    def get_config(self):
+        config = super(ScaledDotProductAttention, self).get_config()
+        config.update({
+            'attn_dropout': self.dropout.rate,
+        })
+        return config
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
+
 
 class MultiHeadAttention(Layer):
     # mode 0 - big matrices, faster; mode 1 - more clear implementation
-    def __init__(self, n_head, d_model, dropout, mode=0):
-        super(MultiHeadAttention, self).__init__()
+    def __init__(self, n_head, d_model, dropout, mode=0, **kwargs):
+        super(MultiHeadAttention, self).__init__(**kwargs)
         self.mode = mode
         self.n_head = n_head
         self.d_k = self.d_v = d_k = d_v = d_model // n_head
@@ -54,7 +65,7 @@ class MultiHeadAttention(Layer):
         self.attention = ScaledDotProductAttention()
         self.w_o = TimeDistributed(Dense(d_model))
 
-    def __call__(self, q, k, v, mask=None):
+    def call(self, q, k, v, mask=None):
         d_k, d_v = self.d_k, self.d_v
         n_head = self.n_head
         head, attn = None, None
@@ -104,32 +115,73 @@ class MultiHeadAttention(Layer):
         outputs = Dropout(self.dropout)(outputs)
         return outputs, attn
 
+    def get_config(self):
+        config = super(MultiHeadAttention, self).get_config()
+        config.update({
+            'n_head': self.n_head,
+            'd_model': self.d_k * self.n_head,  # d_k = d_v
+            'dropout': self.dropout,
+            'mode': self.mode,
+        })
+        return config
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
+
 
 class PositionWiseFeedForward(Layer):
-    def __init__(self, d_hid, d_inner_hid, dropout=0.1):
-        super(PositionWiseFeedForward, self).__init__()
+    def __init__(self, d_hid, d_inner_hid, dropout=0.1, **kwargs):
+        super(PositionWiseFeedForward, self).__init__(**kwargs)
         self.w_1 = Conv1D(d_inner_hid, 1, activation='relu')
         self.w_2 = Conv1D(d_hid, 1)
         self.layer_norm = LayerNormalization()
         self.dropout = Dropout(dropout)
 
-    def __call__(self, x):
+    def call(self, x):
         output = self.w_1(x)
         output = self.w_2(output)
         output = self.dropout(output)
         output = Add()([output, x])
         return self.layer_norm(output)
 
+    def get_config(self):
+        config = super(PositionWiseFeedForward, self).get_config()
+        config.update({
+            'd_hid': self.w_2.filters,
+            'd_inner_hid': self.w_1.filters,
+            'dropout': self.dropout.rate,
+        })
+        return config
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
+
 
 class EncoderLayer(Layer):
-    def __init__(self, d_model, d_inner_hid, n_head, dropout=0.1):
-        super(EncoderLayer, self).__init__()
+    def __init__(self, d_model, d_inner_hid, n_head, dropout=0.1, **kwargs):
+        super(EncoderLayer, self).__init__(**kwargs)
         self.self_att_layer = MultiHeadAttention(n_head, d_model, dropout=dropout, mode=1)
         self.pos_ffn_layer = PositionWiseFeedForward(d_model, d_inner_hid, dropout=dropout)
         self.norm_layer = LayerNormalization()
 
-    def __call__(self, enc_input, mask=None):
+    def call(self, enc_input, mask=None):
         output, slf_attn = self.self_att_layer(enc_input, enc_input, enc_input, mask=mask)
         output = self.norm_layer(Add()([enc_input, output]))
         output = self.pos_ffn_layer(output)
         return output
+
+    def get_config(self):
+        config = super(EncoderLayer, self).get_config()
+        config.update({
+            'd_model': self.self_att_layer.d_k * self.self_att_layer.n_head,  # d_k = d_v
+            'd_inner_hid': self.pos_ffn_layer.w_1.filters,
+            'n_head': self.self_att_layer.n_head,
+            'dropout': self.self_att_layer.dropout,
+        })
+        return config
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
