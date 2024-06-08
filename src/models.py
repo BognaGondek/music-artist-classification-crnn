@@ -10,6 +10,7 @@ from keras.layers import Dense, Dropout, Activation, Reshape, Permute
 from keras.layers import Conv1D, Conv2D, MaxPooling1D, MaxPooling2D
 from keras.layers import BatchNormalization
 from keras.layers import GRU, LSTM
+from src.attention_model import EncoderLayer
 
 
 def crnn2d(x_shape, nb_classes):
@@ -61,6 +62,8 @@ def crnn2d(x_shape, nb_classes):
     model.add(Permute((time_axis, frequency_axis, channel_axis)))
     resize_shape = model.output_shape[2] * model.output_shape[3]
     model.add(Reshape((model.output_shape[1], resize_shape)))
+
+    model.add(EncoderLayer(d_model=128, d_inner_hid=32, n_head=1, dropout=0.0))
 
     # recurrent layer
     model.add(GRU(32, return_sequences=True))
